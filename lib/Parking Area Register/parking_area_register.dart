@@ -492,6 +492,7 @@ class _ParkingAreaRegisterState extends State<ParkingAreaRegister> {
                     ],
                   ),
                 ),
+
             ],
           ),
         ),

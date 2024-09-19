@@ -492,50 +492,7 @@ class _ParkingAreaRegisterState extends State<ParkingAreaRegister> {
                     ],
                   ),
                 ),
-              // Address
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xff1D1617).withOpacity(0.11),
-                        blurRadius: 40,
-                        spreadRadius: 0.0,
-                      )
-                    ],
-                    color: const Color.fromRGBO(247, 247, 249, 1),
-                    borderRadius: BorderRadius.circular(32.0),
-                  ),
-                  child: TextFormField(
-                    keyboardType: TextInputType.text,
-                    controller: _address,
-                    validator: (text) {
-                      if (text == null || text.isEmpty) {
-                        return "Address is Empty";
-                      }
-                      return null;
-                    },
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.all(15),
-                      hintText: 'Address',
-                      prefixIcon: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: SvgPicture.asset(
-                          'assets/icons/Location.svg',
-                          fit: BoxFit.scaleDown,
-                        ),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+
             ],
           ),
         ),

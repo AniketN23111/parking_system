@@ -5,6 +5,9 @@ import 'package:email_validator/email_validator.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:autocomplete_textfield/autocomplete_textfield.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:parking_system/Parking%20Area%20Register/coordinator_details_page.dart';
+import 'package:parking_system/Service/database_service.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../GoogleApi/cloud_api.dart';
 
@@ -19,40 +22,69 @@ class _ParkingAreaRegisterState extends State<ParkingAreaRegister> {
   final TextEditingController _group = TextEditingController();
   final TextEditingController _parkingArea = TextEditingController();
   final TextEditingController _address = TextEditingController();
-  final TextEditingController _geoLocation = TextEditingController();
+  //final TextEditingController _geoLocation = TextEditingController();
   final TextEditingController _ownerName = TextEditingController();
   final TextEditingController _email = TextEditingController();
   final TextEditingController _number = TextEditingController();
 
   String? _gender;
   GlobalKey<AutoCompleteTextFieldState<String>> autoCompleteKey =
-  GlobalKey<AutoCompleteTextFieldState<String>>();
+      GlobalKey<AutoCompleteTextFieldState<String>>();
 
   CloudApi? cloudApi;
   bool _uploading = false;
+  bool _isRegister = false;
   String? _downloadUrl;
+  DatabaseService dbService = DatabaseService();
+  dynamic selectedFile;
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
     _loadCloudApi();
-
   }
 
   Future<void> _loadCloudApi() async {
     String jsonCredentials = await rootBundle
-        .loadString('assets/GoogleJson/clean-emblem-394910-8dd84a4022c3.json');
+        .loadString('assets/GoogleJson/clean-emblem-394910-4bec2543e9f9.json');
     setState(() {
       cloudApi = CloudApi(jsonCredentials);
     });
   }
+
+  void _registerParkingDetails() async{
+    try {
+      final result = await dbService.uploadProfile(
+          _ownerName.text,
+          _email.text,
+          _number.text,
+          _gender.toString(),
+          _group.text,
+          _parkingArea.text,
+          _address.text,
+          _downloadUrl.toString(),
+          selectedFile!);
+      _isRegister = false;
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => CoordinatorDetailsPage(
+                    groupName: _group.text,
+                    parkingArea: _parkingArea.text,
+                   id: result['id'],
+                  )));
+    } catch (e) {
+      print(e);
+    }
+  }
+
   Future<void> _pickAndUploadImage() async {
     setState(() {
       _uploading = true; // Start uploading, show progress indicator
     });
 
     final pickedFile =
-    await ImagePicker().pickImage(source: ImageSource.gallery);
+        await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -98,7 +130,52 @@ class _ParkingAreaRegisterState extends State<ParkingAreaRegister> {
     }
   }
 
+  Widget _buildSelectedFileDisplay() {
+    if (selectedFile != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+        child: Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xff1D1617).withOpacity(0.11),
+                blurRadius: 40,
+                spreadRadius: 0.0,
+              )
+            ],
+            color: const Color.fromRGBO(247, 247, 249, 1),
+            borderRadius: BorderRadius.circular(32.0),
+          ),
+          child: ListTile(
+            title: Text(selectedFile.name),
+            subtitle: Text('Size: ${selectedFile.size} bytes'),
+            trailing: IconButton(
+              icon: Icon(Icons.clear),
+              onPressed: () {
+                setState(() {
+                  selectedFile = null; // Clear the selected file
+                });
+              },
+            ),
+          ),
+        ),
+      );
+    }
+    return SizedBox.shrink(); // Return an empty widget if no file is selected
+  }
 
+  Future<void> _pickFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'docx', 'jpg', 'png'], // Adjust as needed
+    );
+
+    if (result != null) {
+      setState(() {
+        selectedFile = result.files.first; // Get the first selected file
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +220,11 @@ class _ParkingAreaRegisterState extends State<ParkingAreaRegister> {
                         hintText: 'Owner Name',
                         prefixIcon: Padding(
                           padding: const EdgeInsets.all(12),
-                          child: SvgPicture.asset('assets/icons/Name.svg',height: 20,width: 20,),
+                          child: SvgPicture.asset(
+                            'assets/icons/Name.svg',
+                            height: 20,
+                            width: 20,
+                          ),
                         ),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(15),
@@ -225,8 +306,8 @@ class _ParkingAreaRegisterState extends State<ParkingAreaRegister> {
                               hintText: 'Mobile Number',
                               prefixIcon: Padding(
                                 padding: const EdgeInsets.all(12),
-                                child: SvgPicture.asset(
-                                    'assets/icons/Phone.svg'),
+                                child:
+                                    SvgPicture.asset('assets/icons/Phone.svg'),
                               ),
                               border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(15),
@@ -269,8 +350,7 @@ class _ParkingAreaRegisterState extends State<ParkingAreaRegister> {
                         hintText: 'Email',
                         prefixIcon: Padding(
                           padding: const EdgeInsets.all(9),
-                          child: SvgPicture.asset(
-                              'assets/icons/Email.svg'),
+                          child: SvgPicture.asset('assets/icons/Email.svg'),
                         ),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(15),
@@ -315,7 +395,11 @@ class _ParkingAreaRegisterState extends State<ParkingAreaRegister> {
                       hintText: 'Gender',
                       prefixIcon: Padding(
                         padding: const EdgeInsets.all(12),
-                        child: SvgPicture.asset('assets/icons/Gender.svg',height: 20,width: 20,),
+                        child: SvgPicture.asset(
+                          'assets/icons/Gender.svg',
+                          height: 20,
+                          width: 20,
+                        ),
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(15),
@@ -398,8 +482,8 @@ class _ParkingAreaRegisterState extends State<ParkingAreaRegister> {
                       hintText: 'Parking Area',
                       prefixIcon: Padding(
                         padding: const EdgeInsets.all(12),
-                        child: SvgPicture.asset(
-                            'assets/icons/Parking.svg',fit: BoxFit.scaleDown),
+                        child: SvgPicture.asset('assets/icons/Parking.svg',
+                            fit: BoxFit.scaleDown),
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(15),
@@ -442,7 +526,10 @@ class _ParkingAreaRegisterState extends State<ParkingAreaRegister> {
                         prefixIcon: Padding(
                           padding: const EdgeInsets.all(9),
                           child: SvgPicture.asset(
-                              'assets/icons/Address.svg',height: 20,width: 20,),
+                            'assets/icons/Address.svg',
+                            height: 20,
+                            width: 20,
+                          ),
                         ),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(15),
@@ -466,9 +553,9 @@ class _ParkingAreaRegisterState extends State<ParkingAreaRegister> {
                     child: _uploading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
-                      'Upload QR Photo',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
+                            'Upload QR Photo',
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
                   ),
                 ),
               ),
@@ -492,6 +579,43 @@ class _ParkingAreaRegisterState extends State<ParkingAreaRegister> {
                     ],
                   ),
                 ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _pickFile,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text('Select File',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildSelectedFileDisplay(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: GestureDetector(
+                  onTap: _registerParkingDetails,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.blue,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: _isRegister
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            'Submit',
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -499,4 +623,3 @@ class _ParkingAreaRegisterState extends State<ParkingAreaRegister> {
     );
   }
 }
-
